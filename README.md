@@ -5,15 +5,6 @@ A C++ multi-game launcher. It bundles four components behind a single graphical 
 **Stated objective:** *"To write simplest programs in C++."* **Stated introduction (verbatim intent):** the team set out to design code for a device that can handle multiple programs/games — similar in spirit to the late-90s Game Boy — as a single integrated platform so users don't need to switch between devices for different games/utilities, with an eye toward save/load progress and customizable settings. The team's primary technical focus was Flappy Bird, Tic-Tac-Toe, and Tetris, with a management-system module added "to provide the user with extra features."
 
 
-> **Repository composition note:** This repository actually contains **two independent, unconnected pieces of code**, plus a discrepancy between the checked-in source and the Project Report's version of it:
->
-> 1. **[`Project.cpp`](Project.cpp)** — a single-file, standalone SFML/console application that implements the menu, Tic-Tac-Toe, Flappy Bird, and Tetris described above. It has its own `main()` entry point and is **not** referenced by any `.vcxproj`/build file in this repo. **It does not currently include the Shop Management System** that the Project Report describes and shows in full — see [Component 4](#component-4-shop-management-system-in-project-report-not-in-current-source) below.
-> 2. **The `GUI Application.*` files** — an untouched Visual Studio **"Windows Desktop Application" wizard template** (Win32 API skeleton) with its own `wWinMain` entry point, menu, and About dialog. It contains no game logic and is not connected to `Project.cpp` in any way (different entry point, different windowing model, not included in the same executable).
->
-> Both are documented in full below. If you only care about the actual games, jump to [The Game Suite (`Project.cpp`)](#the-game-suite-projectcpp).
-
----
-
 ## Table of Contents
 
 - [Team & Course Context](#team--course-context-from-the-project-report)
@@ -24,7 +15,7 @@ A C++ multi-game launcher. It bundles four components behind a single graphical 
   - [Game 1: Tic-Tac-Toe (SFML)](#game-1-tic-tac-toe-sfml)
   - [Game 2: Flappy Bird (Console Buffer)](#game-2-flappy-bird-console-buffer)
   - [Game 3: Tetris (Console Buffer)](#game-3-tetris-console-buffer)
-  - [Component 4: Shop Management System (in Project Report, not in current source)](#component-4-shop-management-system-in-project-report-not-in-current-source)
+  - [Component 4: Shop Management System](#component-4-shop-management-system)
   - [Assets Used by `Project.cpp`](#assets-used-by-projectcpp)
   - [Dependencies](#dependencies)
   - [Building and Running `Project.cpp`](#building-and-running-projectcpp)
@@ -35,10 +26,7 @@ A C++ multi-game launcher. It bundles four components behind a single graphical 
   - [Building the Win32 Skeleton](#building-the-win32-skeleton)
 - [Repository Structure](#repository-structure)
 - [File-by-File Reference](#file-by-file-reference)
-- [Report vs. Repository: Known Discrepancies](#report-vs-repository-known-discrepancies)
-- [Known Issues / Bugs / Housekeeping](#known-issues--bugs--housekeeping)
-- [Roadmap](#roadmap)
-- [License](#license)
+
 
 ---
 
