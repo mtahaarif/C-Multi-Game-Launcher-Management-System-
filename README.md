@@ -244,7 +244,6 @@ Or open `GUI Application.vcxproj` directly in Visual Studio 2022 and build/run w
 ├── targetver.h                     # Minimum supported Windows platform (SDKDDKVer.h)
 ├── small.ico                       # Small (taskbar/title-bar) icon variant
 ├── RCa25372                        # Stray temporary file left behind by the RC compiler (see Known Issues)
-├── Project Report.docx             # Official course submission: objectives, authorship, full code listing (incl. Shop Management System)
 └── README.md                       # This file
 ```
 
@@ -253,7 +252,6 @@ Or open `GUI Application.vcxproj` directly in Visual Studio 2022 and build/run w
 | File | Description |
 |---|---|
 | [`Project.cpp`](Project.cpp) | The real multi-game launcher: `main()`, menu, `Tic_Tac_Toe`, `win_checker`, the full Flappy Bird module, and the full Tetris module (see [above](#the-game-suite-projectcpp)). Does **not** include the Shop Management System from the Project Report. |
-| [`Project Report.docx`](Project%20Report.docx) | The team's official NUST C&SE course submission — objectives, hardware/software requirements, introduction, a full source listing (including the Shop Management System not present in `Project.cpp`), per-module authorship, and conclusion. Source for the [Team & Course Context](#team--course-context-from-the-project-report) and [Report vs. Repository Discrepancies](#report-vs-repository-known-discrepancies) sections of this README. |
 | [`ARIAL.TTF`](ARIAL.TTF) | TrueType font asset used for the Tic-Tac-Toe `X`/`O` glyphs. |
 | [`psfont.otf`](psfont.otf) | OpenType font asset used for menu/UI text. |
 | [`bg.jpeg`](bg.jpeg) | Menu screen background image. |
@@ -270,5 +268,3 @@ Or open `GUI Application.vcxproj` directly in Visual Studio 2022 and build/run w
 | [`GUI Application.vcxproj.user`](GUI%20Application.vcxproj.user) | Per-developer, machine-local IDE settings; not meaningful across checkouts. |
 | `RCa25372` | Stray leftover temporary file from the RC (resource) compiler — see [Known Issues](#known-issues--bugs--housekeeping). |
 | [`README.md`](README.md) | This documentation file. |
-
-ts are reserved by the authors unless a license is added.
