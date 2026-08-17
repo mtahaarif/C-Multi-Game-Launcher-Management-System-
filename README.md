@@ -1,6 +1,6 @@
 # Gameboy Multi-Game Launcher
 
-A Win32 desktop application project, built with Visual Studio and the native Windows API (`<windows.h>`), created as a **Fundamentals of Programming** course project during the 2nd semester of a Bachelor of Computer Engineering degree.
+A Win32 desktop application project, built with Visual Studio and the native Windows API (`<windows.h>`)
 
 > **Note on project status:** This repository currently contains the unmodified Visual Studio **"Windows Desktop Application" wizard template** (see [Current State vs. Intended Scope](#current-state-vs-intended-scope) below) rather than the SFML/console-based multi-game launcher described in the original project brief. This document describes exactly what is present in the source tree today, and outlines what remains to be built to reach the originally intended scope.
 
