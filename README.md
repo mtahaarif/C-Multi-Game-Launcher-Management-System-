@@ -1,19 +1,6 @@
 # Gameboy Multi-Game Launcher
 
-A C++ multi-game launcher built as a **Fundamentals of Programming** course project at the **Department of Computer & Software Engineering, College of E&ME, NUST, Rawalpindi**. It bundles four components behind a single graphical menu — **Tic-Tac-Toe**, **Flappy Bird**, **Tetris**, and a console-based **Shop Management System** — mixing **SFML** (for graphics/fonts/menu rendering) with **raw Windows Console Buffer manipulation** (for the ASCII-rendered games) and **file-stream-based persistence with OOP/inheritance** (for the shop management module).
-
-This documentation is based on both a direct read of the source tree and the team's official **`Project Report.docx`**, which records the project's stated objectives, authorship, and a version of the code that additionally includes the Shop Management module.
-
-### Team & Course Context (from the Project Report)
-
-| | |
-|---|---|
-| **Subject** | Fundamentals of Programming |
-| **Department** | Computer & Software Engineering, College of E&ME, NUST, Rawalpindi |
-| **Section** | DE-44 |
-| **Submitted to** | LE Syed Abubakar |
-| **Submission date** | 08/06/23 |
-| **Team members** | Muhammad Taha (417609), Mueed Rauf (404536), Talha Arshad (410179), Muhammad Abdullah |
+A C++ multi-game launcher. It bundles four components behind a single graphical menu — **Tic-Tac-Toe**, **Flappy Bird**, **Tetris**, and a console-based **Shop Management System** — mixing **SFML** (for graphics/fonts/menu rendering) with **raw Windows Console Buffer manipulation** (for the ASCII-rendered games) and **file-stream-based persistence with OOP/inheritance** (for the shop management module).
 
 **Stated objective:** *"To write simplest programs in C++."* **Stated introduction (verbatim intent):** the team set out to design code for a device that can handle multiple programs/games — similar in spirit to the late-90s Game Boy — as a single integrated platform so users don't need to switch between devices for different games/utilities, with an eye toward save/load progress and customizable settings. The team's primary technical focus was Flappy Bird, Tic-Tac-Toe, and Tetris, with a management-system module added "to provide the user with extra features."
 
