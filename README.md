@@ -72,6 +72,7 @@ Select Your Option
 2. Flappy Bird.
 3. Tetris.
 ```
+![Main Dasboard](main-dashboard.png)
 
 Selection is done by **polling `sf::Keyboard::isKeyPressed`** for the number keys `1`/`2`/`3` inside the render loop (not an event-driven `KeyPressed` handler), so a game launches as soon as the corresponding key is held down/pressed while the menu is showing.
 
@@ -88,6 +89,8 @@ Implemented in `Tic_Tac_Toe(sf::RenderWindow&, sf::Text&, sf::Texture&, sf::Spri
 - **Window title text** is redrawn each frame as `"Welcome to Tic Tac Toe"`.
 
 > Because `counter` starts at an **odd** value (3), the very first move each game actually belongs to the computer's branch (`counter % 2 != 0`), not the human — see [Known Issues](#known-issues--bugs--housekeeping).
+![Tic Tac Toe](tic-tac-toe.png)
+
 
 ### Game 2: Flappy Bird (Console Buffer)
 
@@ -100,6 +103,9 @@ Implemented in `Flappy_bird()` and its helpers (`play`, `instructions`, `drawBor
 - **Collision & scoring**: `collision()` checks whether the bird's row is inside the gap once the first pipe reaches `pipePos[0] >= 61`; passing a pipe (`pipePos[0] > 68`) increments `score` (shown via `updateScore()`).
 - **Game over**: hitting a pipe or falling past the bottom border (`birdPos > SCREEN_HEIGHT - 2`) shows a "Game Over" banner and returns to the text menu.
 - **Frame pacing**: fixed `Sleep(100)` per tick (~10 FPS).
+
+![Flappy Bird](flappy-bird.png)
+
 
 ### Game 3: Tetris (Console Buffer)
 
@@ -114,7 +120,9 @@ Implemented in `Tetris()` plus `rotate()` and `Doesfit()`, using a **dedicated c
 - **Rendering**: the entire play-field plus a live `"SCORE: %8d"` HUD is composed into a `wchar_t* screen` buffer each frame and blitted in one call via `WriteConsoleOutputCharacter`.
 - **Frame pacing**: `this_thread::sleep_for(50ms)` per tick (~20 FPS).
 
-### Component 4: Shop Management System (in Project Report, not in current source)
+![Tetris](tetris.png)
+
+### Component 4: Shop Management System
 
 The Project Report's listing adds a fourth menu option — `"4.Shop Managment."` — wired to a `shop_managment()` function, and credits it to **Muhammad Abdullah**, built with OOP and inheritance. **This function, and everything it depends on, is absent from the [`Project.cpp`](Project.cpp) file currently checked into this repository** — the repo's `main()` only offers options 1–3. It is documented here so the intended full scope of the project is not lost, and so it can be re-integrated (see [Roadmap](#roadmap)).
 
@@ -129,6 +137,8 @@ As described in the report, the module is a small console-based **shop/inventory
 - **`admin()`** — a text-menu loop offering: Add Entries, Show Profit, Search Product Details, Search Employee Details, Modify Product Details, Modify Employee Details, Exit. Searching/viewing a record just streams the corresponding `<id>.txt` file's raw contents to `cout` character-by-character.
 - **`shop_managment()`** — the outer entry point reached from the main game menu; presents a "WELCOME TO MY SHOP" banner with `1. ENTER SYSTEM` (→ `admin()`) / `2. EXIT`.
 - **Known bug already present in the reported code**: `switch (op)` in `flappy_bird()`'s menu (report version) has no `break` statements between `case '1'`/`case '2'`/`case '3'`, so selecting "Start Game" falls through into "Instructions" and then "Quit" once `play()` returns; `amount::update_emp()` never checks whether writing the ID's file succeeded before reading input into `post`; profit/staff-cost math (`cal()`) mixes `+=`/`*=` style adjustments across calls without resetting per-record deltas, so repeated calls compound rather than replace.
+- 
+![Shop Management System](shop-management-system.png)
 
 ### Assets Used by `Project.cpp`
 
