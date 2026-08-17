@@ -1,10 +1,34 @@
 # Gameboy Multi-Game Launcher
 
-A C++ multi-game launcher built as a **Fundamentals of Programming** course project (2nd semester, Bachelor of Computer Engineering). It bundles three classic games — **Tic-Tac-Toe**, **Flappy Bird**, and **Tetris** — behind a single graphical menu, mixing **SFML** (for graphics/fonts/menu rendering) with **raw Windows Console Buffer manipulation** (for the two ASCII-rendered games).
+A C++ multi-game launcher built as a **Fundamentals of Programming** course project at the **Department of Computer & Software Engineering, College of E&ME, NUST, Rawalpindi**. It bundles four components behind a single graphical menu — **Tic-Tac-Toe**, **Flappy Bird**, **Tetris**, and a console-based **Shop Management System** — mixing **SFML** (for graphics/fonts/menu rendering) with **raw Windows Console Buffer manipulation** (for the ASCII-rendered games) and **file-stream-based persistence with OOP/inheritance** (for the shop management module).
 
-> **Repository composition note:** This repository actually contains **two independent, unconnected pieces of code**:
+This documentation is based on both a direct read of the source tree and the team's official **`Project Report.docx`**, which records the project's stated objectives, authorship, and a version of the code that additionally includes the Shop Management module.
+
+### Team & Course Context (from the Project Report)
+
+| | |
+|---|---|
+| **Subject** | Fundamentals of Programming |
+| **Department** | Computer & Software Engineering, College of E&ME, NUST, Rawalpindi |
+| **Section** | DE-44 |
+| **Submitted to** | LE Syed Abubakar |
+| **Submission date** | 08/06/23 |
+| **Team members** | Muhammad Taha (417609), Mueed Rauf (404536), Talha Arshad (410179), Muhammad Abdullah |
+
+**Stated objective:** *"To write simplest programs in C++."* **Stated introduction (verbatim intent):** the team set out to design code for a device that can handle multiple programs/games — similar in spirit to the late-90s Game Boy — as a single integrated platform so users don't need to switch between devices for different games/utilities, with an eye toward save/load progress and customizable settings. The team's primary technical focus was Flappy Bird, Tic-Tac-Toe, and Tetris, with a management-system module added "to provide the user with extra features."
+
+**Per-module authorship (as credited in the Project Report):**
+
+| Module | Author | Notes from the report |
+|---|---|---|
+| SFML setup, main menu integration, Tic-Tac-Toe | Muhammad Taha | "GUI was generated using SFML libraries and texture to [create] Tic-Tac-Toe and menu background wallpaper." |
+| Flappy Bird | Talha Arshad | Built with `<Windows.h>` console APIs; described in the report as "quite complex and efficient." |
+| Tetris | Mueed Rauf | Described as making "frequent use of Arrays," also built with `<Windows.h>` console APIs. |
+| Shop Management System | Muhammad Abdullah | Built using object-oriented programming and inheritance. |
+
+> **Repository composition note:** This repository actually contains **two independent, unconnected pieces of code**, plus a discrepancy between the checked-in source and the Project Report's version of it:
 >
-> 1. **[`Project.cpp`](Project.cpp)** — a single-file, standalone SFML/console application that *is* the multi-game launcher described above. It has its own `main()` entry point and is **not** referenced by any `.vcxproj`/build file in this repo.
+> 1. **[`Project.cpp`](Project.cpp)** — a single-file, standalone SFML/console application that implements the menu, Tic-Tac-Toe, Flappy Bird, and Tetris described above. It has its own `main()` entry point and is **not** referenced by any `.vcxproj`/build file in this repo. **It does not currently include the Shop Management System** that the Project Report describes and shows in full — see [Component 4](#component-4-shop-management-system-in-project-report-not-in-current-source) below.
 > 2. **The `GUI Application.*` files** — an untouched Visual Studio **"Windows Desktop Application" wizard template** (Win32 API skeleton) with its own `wWinMain` entry point, menu, and About dialog. It contains no game logic and is not connected to `Project.cpp` in any way (different entry point, different windowing model, not included in the same executable).
 >
 > Both are documented in full below. If you only care about the actual games, jump to [The Game Suite (`Project.cpp`)](#the-game-suite-projectcpp).
@@ -13,6 +37,7 @@ A C++ multi-game launcher built as a **Fundamentals of Programming** course proj
 
 ## Table of Contents
 
+- [Team & Course Context](#team--course-context-from-the-project-report)
 - [Overview](#overview)
 - [The Game Suite (`Project.cpp`)](#the-game-suite-projectcpp)
   - [Program Flow](#program-flow)
@@ -20,6 +45,7 @@ A C++ multi-game launcher built as a **Fundamentals of Programming** course proj
   - [Game 1: Tic-Tac-Toe (SFML)](#game-1-tic-tac-toe-sfml)
   - [Game 2: Flappy Bird (Console Buffer)](#game-2-flappy-bird-console-buffer)
   - [Game 3: Tetris (Console Buffer)](#game-3-tetris-console-buffer)
+  - [Component 4: Shop Management System (in Project Report, not in current source)](#component-4-shop-management-system-in-project-report-not-in-current-source)
   - [Assets Used by `Project.cpp`](#assets-used-by-projectcpp)
   - [Dependencies](#dependencies)
   - [Building and Running `Project.cpp`](#building-and-running-projectcpp)
@@ -30,6 +56,7 @@ A C++ multi-game launcher built as a **Fundamentals of Programming** course proj
   - [Building the Win32 Skeleton](#building-the-win32-skeleton)
 - [Repository Structure](#repository-structure)
 - [File-by-File Reference](#file-by-file-reference)
+- [Report vs. Repository: Known Discrepancies](#report-vs-repository-known-discrepancies)
 - [Known Issues / Bugs / Housekeeping](#known-issues--bugs--housekeeping)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -45,7 +72,9 @@ A C++ multi-game launcher built as a **Fundamentals of Programming** course proj
 | **Graphics** | [SFML](https://www.sfml-dev.org/) (`sf::RenderWindow`, `sf::Sprite`, `sf::Text`, `sf::Font`) for the launcher menu and Tic-Tac-Toe |
 | **Text rendering (2 games)** | Native Windows Console API (`SetConsoleCursorPosition`, `WriteConsoleOutputCharacter`, `CreateConsoleScreenBuffer`) for Flappy Bird and Tetris |
 | **Platform** | Windows only (uses `<Windows.h>`, `<conio.h>`, console screen buffers, `GetAsyncKeyState`) |
+| **Persistence (report version only)** | `<fstream>` file I/O, one flat text file per product/employee record, keyed by ID |
 | **Unrelated scaffold present in repo** | A separate, unused Win32 GUI wizard template (`GUI Application.*`) — see [below](#the-win32-skeleton-gui-application) |
+| **Team** | Muhammad Taha, Mueed Rauf, Talha Arshad, Muhammad Abdullah — NUST C&SE, DE-44 |
 
 ## The Game Suite (`Project.cpp`)
 
@@ -117,6 +146,22 @@ Implemented in `Tetris()` plus `rotate()` and `Doesfit()`, using a **dedicated c
 - **Gravity & locking**: a `speedcounter`/`speed=20` tick-based timer forces the active piece down periodically; when it can no longer fall, its cells are baked into `pspace`, completed rows are detected and shifted down (line clear, `+25` score per cleared column cell), and a new random piece (`rand() % 7`) spawns at the top — game over if the new piece immediately collides.
 - **Rendering**: the entire play-field plus a live `"SCORE: %8d"` HUD is composed into a `wchar_t* screen` buffer each frame and blitted in one call via `WriteConsoleOutputCharacter`.
 - **Frame pacing**: `this_thread::sleep_for(50ms)` per tick (~20 FPS).
+
+### Component 4: Shop Management System (in Project Report, not in current source)
+
+The Project Report's listing adds a fourth menu option — `"4.Shop Managment."` — wired to a `shop_managment()` function, and credits it to **Muhammad Abdullah**, built with OOP and inheritance. **This function, and everything it depends on, is absent from the [`Project.cpp`](Project.cpp) file currently checked into this repository** — the repo's `main()` only offers options 1–3. It is documented here so the intended full scope of the project is not lost, and so it can be re-integrated (see [Roadmap](#roadmap)).
+
+As described in the report, the module is a small console-based **shop/inventory admin tool**, structured as:
+
+- **Class hierarchy** (multiple/virtual inheritance):
+  - `earn` — base class holding a `profit` total; `show()` reads a running profit value out of a flat file (`OOO.txt`) and prints it (prints `"PROFIT = 0"` if the file doesn't exist yet).
+  - `product : public virtual earn` — a product record (`quan`, `name`, `id`, `percost`, `persell`, computed `cost`/`sell`); `cal()` computes cost/sell from quantity and updates the shared `profit`; `get()` prompts for `N` products interactively and writes each to `<product-id>.txt`.
+  - `staff : public virtual earn` — an employee record (`salary`, `post`, `empid`, `postquan`); `cal()` deducts salary costs from `profit`; `getstaff()` prompts for employee data and writes it to `<employee-id>.txt`.
+  - `amount : public staff, public product` — the combined "transaction" class exposing `add()` (routes to either product or employee entry), `update_item()` / `update_emp()` (rewrite an existing record's file after re-prompting for its fields).
+- **Persistence model**: no database — every product/employee is its own flat text file named after its ID (`<id>.txt`), read/written with `ifstream`/`ofstream`/`fstream` and C-string `strcpy`/`strcat` for filename building; the running profit total is separately persisted in `ooo.txt`/`OOO.txt`.
+- **`admin()`** — a text-menu loop offering: Add Entries, Show Profit, Search Product Details, Search Employee Details, Modify Product Details, Modify Employee Details, Exit. Searching/viewing a record just streams the corresponding `<id>.txt` file's raw contents to `cout` character-by-character.
+- **`shop_managment()`** — the outer entry point reached from the main game menu; presents a "WELCOME TO MY SHOP" banner with `1. ENTER SYSTEM` (→ `admin()`) / `2. EXIT`.
+- **Known bug already present in the reported code**: `switch (op)` in `flappy_bird()`'s menu (report version) has no `break` statements between `case '1'`/`case '2'`/`case '3'`, so selecting "Start Game" falls through into "Instructions" and then "Quit" once `play()` returns; `amount::update_emp()` never checks whether writing the ID's file succeeded before reading input into `post`; profit/staff-cost math (`cal()`) mixes `+=`/`*=` style adjustments across calls without resetting per-record deltas, so repeated calls compound rather than replace.
 
 ### Assets Used by `Project.cpp`
 
@@ -220,6 +265,7 @@ Or open `GUI Application.vcxproj` directly in Visual Studio 2022 and build/run w
 ├── targetver.h                     # Minimum supported Windows platform (SDKDDKVer.h)
 ├── small.ico                       # Small (taskbar/title-bar) icon variant
 ├── RCa25372                        # Stray temporary file left behind by the RC compiler (see Known Issues)
+├── Project Report.docx             # Official course submission: objectives, authorship, full code listing (incl. Shop Management System)
 └── README.md                       # This file
 ```
 
@@ -227,7 +273,8 @@ Or open `GUI Application.vcxproj` directly in Visual Studio 2022 and build/run w
 
 | File | Description |
 |---|---|
-| [`Project.cpp`](Project.cpp) | The real multi-game launcher: `main()`, menu, `Tic_Tac_Toe`, `win_checker`, the full Flappy Bird module, and the full Tetris module (see [above](#the-game-suite-projectcpp)). |
+| [`Project.cpp`](Project.cpp) | The real multi-game launcher: `main()`, menu, `Tic_Tac_Toe`, `win_checker`, the full Flappy Bird module, and the full Tetris module (see [above](#the-game-suite-projectcpp)). Does **not** include the Shop Management System from the Project Report. |
+| [`Project Report.docx`](Project%20Report.docx) | The team's official NUST C&SE course submission — objectives, hardware/software requirements, introduction, a full source listing (including the Shop Management System not present in `Project.cpp`), per-module authorship, and conclusion. Source for the [Team & Course Context](#team--course-context-from-the-project-report) and [Report vs. Repository Discrepancies](#report-vs-repository-known-discrepancies) sections of this README. |
 | [`ARIAL.TTF`](ARIAL.TTF) | TrueType font asset used for the Tic-Tac-Toe `X`/`O` glyphs. |
 | [`psfont.otf`](psfont.otf) | OpenType font asset used for menu/UI text. |
 | [`bg.jpeg`](bg.jpeg) | Menu screen background image. |
@@ -244,6 +291,23 @@ Or open `GUI Application.vcxproj` directly in Visual Studio 2022 and build/run w
 | [`GUI Application.vcxproj.user`](GUI%20Application.vcxproj.user) | Per-developer, machine-local IDE settings; not meaningful across checkouts. |
 | `RCa25372` | Stray leftover temporary file from the RC (resource) compiler — see [Known Issues](#known-issues--bugs--housekeeping). |
 | [`README.md`](README.md) | This documentation file. |
+
+## Report vs. Repository: Known Discrepancies
+
+The Project Report embeds a full source listing of the game suite that differs from the [`Project.cpp`](Project.cpp) actually checked into this repository. Treat the repository as the source of truth for what currently builds and runs; the differences below are recorded for traceability back to the submitted report.
+
+| Aspect | Project Report version | Current `Project.cpp` in repo |
+|---|---|---|
+| Menu options | 4 (`Tic Tac Toe`, `Flappy Bird`, `Tetris`, `Shop Managment`) | 3 (`Tic Tac Toe`, `Flappy Bird`, `Tetris`) |
+| Shop Management System | Present in full (see [Component 4](#component-4-shop-management-system-in-project-report-not-in-current-source)) | **Absent** |
+| Flappy Bird function name | `flappy_bird()` (lowercase f) | `Flappy_bird()` (capital F) |
+| Flappy Bird jump strength | `birdPos -= 6` per Spacebar press | `birdPos -= 4` per Spacebar press |
+| Flappy Bird pipe scroll speed | `pipePos[i] += 3` per tick | `pipePos[i] += 2` per tick |
+| Flappy Bird in-game control hint | Shows both `"Spacebar = jump"` and `"Esc = Leave Game"` | Shows only `"Spacebar = jump"` |
+| Flappy Bird menu dispatch | `switch(op)` with **no `break`** between cases (falls through `1`→`2`→`3`) | `if`/`else if` chain (no fallthrough bug) |
+| Extra headers | Also includes `<string>`, `<cstring>`, `<stdio.h>`, `<cstdlib>`, `<fstream>` (for the shop module) | Only the headers needed for the 3 games |
+
+These are minor gameplay-tuning and scope differences consistent with the repo containing a **later, slightly modified iteration** of the code than the one embedded in the submitted report — most notably with the Shop Management System removed.
 
 ## Known Issues / Bugs / Housekeeping
 
@@ -268,7 +332,9 @@ To turn this into a single, cohesive, buildable project:
 4. **Fix Tic-Tac-Toe game-over handling** — stop the game, lock the board, and display a win/draw message once `win_checker` finds a winner or the board fills up. Also fix the turn-order-starts-on-computer bug.
 5. **Add a `.gitignore`** covering VS/MSBuild/vcpkg build artifacts, and remove the stray `RCa25372` file from version control.
 6. **Return-to-menu flow** — currently selecting Flappy Bird or Tetris permanently closes the SFML window (`window.close()`); there's no path back to the graphical main menu after finishing either console game.
+7. **Re-integrate the Shop Management System** — port `shop_managment()`/`admin()` and the `earn`/`product`/`staff`/`amount` class hierarchy from the Project Report back into `Project.cpp` as menu option 4, matching the project's original stated scope.
+8. **Fix the reported Flappy Bird menu fallthrough bug** — if/when reconciling with the report's `flappy_bird()` version, add `break` statements to its option `switch` so selecting "Start Game" doesn't fall through into "Instructions" and "Quit".
 
 ## License
 
-No license file is currently present in this repository. All rights are reserved by the author unless a license is added.
+No license file is currently present in this repository. This project was submitted as coursework for Fundamentals of Programming at the Department of Computer & Software Engineering, NUST (College of E&ME), by Muhammad Taha, Mueed Rauf, Talha Arshad, and Muhammad Abdullah. All rights are reserved by the authors unless a license is added.
