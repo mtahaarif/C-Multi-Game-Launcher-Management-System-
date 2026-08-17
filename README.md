@@ -1,352 +1,273 @@
 # Gameboy Multi-Game Launcher
 
-A Win32 desktop application project, built with Visual Studio and the native Windows API (`<windows.h>`)
+A C++ multi-game launcher built as a **Fundamentals of Programming** course project (2nd semester, Bachelor of Computer Engineering). It bundles three classic games — **Tic-Tac-Toe**, **Flappy Bird**, and **Tetris** — behind a single graphical menu, mixing **SFML** (for graphics/fonts/menu rendering) with **raw Windows Console Buffer manipulation** (for the two ASCII-rendered games).
 
-> **Note on project status:** This repository currently contains the unmodified Visual Studio **"Windows Desktop Application" wizard template** (see [Current State vs. Intended Scope](#current-state-vs-intended-scope) below) rather than the SFML/console-based multi-game launcher described in the original project brief. This document describes exactly what is present in the source tree today, and outlines what remains to be built to reach the originally intended scope.
+> **Repository composition note:** This repository actually contains **two independent, unconnected pieces of code**:
+>
+> 1. **[`Project.cpp`](Project.cpp)** — a single-file, standalone SFML/console application that *is* the multi-game launcher described above. It has its own `main()` entry point and is **not** referenced by any `.vcxproj`/build file in this repo.
+> 2. **The `GUI Application.*` files** — an untouched Visual Studio **"Windows Desktop Application" wizard template** (Win32 API skeleton) with its own `wWinMain` entry point, menu, and About dialog. It contains no game logic and is not connected to `Project.cpp` in any way (different entry point, different windowing model, not included in the same executable).
+>
+> Both are documented in full below. If you only care about the actual games, jump to [The Game Suite (`Project.cpp`)](#the-game-suite-projectcpp).
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Current State vs. Intended Scope](#current-state-vs-intended-scope)
+- [The Game Suite (`Project.cpp`)](#the-game-suite-projectcpp)
+  - [Program Flow](#program-flow)
+  - [Main Menu](#main-menu)
+  - [Game 1: Tic-Tac-Toe (SFML)](#game-1-tic-tac-toe-sfml)
+  - [Game 2: Flappy Bird (Console Buffer)](#game-2-flappy-bird-console-buffer)
+  - [Game 3: Tetris (Console Buffer)](#game-3-tetris-console-buffer)
+  - [Assets Used by `Project.cpp`](#assets-used-by-projectcpp)
+  - [Dependencies](#dependencies)
+  - [Building and Running `Project.cpp`](#building-and-running-projectcpp)
+- [The Win32 Skeleton (`GUI Application.*`)](#the-win32-skeleton-gui-application)
+  - [Architecture](#architecture)
+  - [Resources](#resources)
+  - [Build System](#build-system)
+  - [Building the Win32 Skeleton](#building-the-win32-skeleton)
 - [Repository Structure](#repository-structure)
-- [Architecture](#architecture)
-  - [Application Entry Point](#application-entry-point)
-  - [Window Registration](#window-registration)
-  - [Instance Initialization](#instance-initialization)
-  - [Message Loop](#message-loop)
-  - [Window Procedure](#window-procedure)
-  - [About Dialog](#about-dialog)
-- [Resources](#resources)
-  - [Resource Symbols (Resource.h)](#resource-symbols-resourceh)
-  - [Menu](#menu)
-  - [Accelerator Table](#accelerator-table)
-  - [Dialog: About Box](#dialog-about-box)
-  - [String Table](#string-table)
-  - [Icons](#icons)
-- [Build System](#build-system)
-  - [Project File (.vcxproj)](#project-file-vcxproj)
-  - [Build Configurations](#build-configurations)
-  - [Compiler / Linker Settings](#compiler--linker-settings)
-- [Prerequisites](#prerequisites)
-- [Building the Project](#building-the-project)
-  - [Using Visual Studio IDE](#using-visual-studio-ide)
-  - [Using MSBuild from the Command Line](#using-msbuild-from-the-command-line)
-- [Running the Application](#running-the-application)
 - [File-by-File Reference](#file-by-file-reference)
-- [Known Issues / Housekeeping](#known-issues--housekeeping)
-- [Roadmap: Reaching the Intended "Multi-Game Launcher" Scope](#roadmap-reaching-the-intended-multi-game-launcher-scope)
+- [Known Issues / Bugs / Housekeeping](#known-issues--bugs--housekeeping)
+- [Roadmap](#roadmap)
 - [License](#license)
 
 ---
 
 ## Overview
 
-The project is set up as a standard **Win32 GUI application** (not a console app, not MFC, not using any external graphics library at present). It uses:
-
-- The native **Win32 API** (`windows.h`) for window creation, message handling, and dialogs.
-- A classic **Windows resource script** (`.rc`) for the menu, accelerator table, icons, dialog, and string table.
-- **MSBuild / Visual Studio project files** (`.vcxproj`, `.vcxproj.filters`, `.vcxproj.user`) targeting the **v143 (Visual Studio 2022) toolset**.
-- Unicode character set (`wWinMain`, `WCHAR`, `LoadStringW`, `RegisterClassExW`).
-
-At present the application does nothing beyond what the Visual Studio wizard scaffolds automatically: it opens a blank window with a `File` / `Help` menu, an `Exit` command, and an `About` dialog box. There is no game logic, no rendering loop beyond `WM_PAINT` (which currently does nothing), and no SFML dependency wired into the project.
-
-## Current State vs. Intended Scope
-
-The one-paragraph project description (originally the entire README) states:
-
-> "Developed a game launcher in C++ combining SFML graphics with raw Console Buffer Manipulation for high-performance text rendering. Implemented matrix rotation algorithms for Tetris and a custom physics engine for Flappy Bird using cursor manipulation logic."
-
-None of the following are present anywhere in the current source tree:
-
-| Claimed feature | Status |
+| | |
 |---|---|
-| SFML graphics integration | **Not present** — no SFML headers, libraries, NuGet/vcpkg references, or linker settings for SFML exist in `GUI Application.vcxproj`. |
-| Console Screen Buffer manipulation (`SetConsoleCursorPosition`, `WriteConsoleOutput`, etc.) | **Not present** — the app is a `WINDOWS` subsystem GUI app, not a console app (`SubSystem` = `Windows` in every build configuration), and no console-buffer code exists. |
-| Tetris implementation (matrix rotation) | **Not present** — no Tetris-related source files, matrices, or piece-rotation logic exist. |
-| Flappy Bird implementation (physics engine) | **Not present** — no Flappy Bird-related source files or physics/gravity code exist. |
-| A "launcher" screen for selecting between games | **Not present** — `WndProc` only handles `About` and `Exit` menu commands; `WM_PAINT` is an empty stub. |
+| **Language** | C++ |
+| **Real entry point** | `main()` in [`Project.cpp`](Project.cpp) |
+| **Graphics** | [SFML](https://www.sfml-dev.org/) (`sf::RenderWindow`, `sf::Sprite`, `sf::Text`, `sf::Font`) for the launcher menu and Tic-Tac-Toe |
+| **Text rendering (2 games)** | Native Windows Console API (`SetConsoleCursorPosition`, `WriteConsoleOutputCharacter`, `CreateConsoleScreenBuffer`) for Flappy Bird and Tetris |
+| **Platform** | Windows only (uses `<Windows.h>`, `<conio.h>`, console screen buffers, `GetAsyncKeyState`) |
+| **Unrelated scaffold present in repo** | A separate, unused Win32 GUI wizard template (`GUI Application.*`) — see [below](#the-win32-skeleton-gui-application) |
 
-What **is** present is the raw scaffolding a game (or any Win32 app) would be built on top of: a working message pump, a window class, a menu/accelerator/about-dialog resource set, and a build system already configured for both `Win32`/`x64` and `Debug`/`Release`. In other words, this is the **starting skeleton**, not the finished launcher. See [Roadmap](#roadmap-reaching-the-intended-multi-game-launcher-scope) for what would need to be added to match the project description.
+## The Game Suite (`Project.cpp`)
 
-## Repository Structure
+This is the actual "Gameboy Multi-Game Launcher": one `.cpp` file containing an SFML-rendered menu screen and three selectable games, two of which fall back to direct console-buffer rendering for speed.
+
+### Program Flow
 
 ```
--Gameboy-Multi-Game-Launcher/
-├── GUI Application.cpp            # Application entry point, WinMain, WndProc, message loop
-├── GUI Application.h              # Minimal app header (pulls in Resource.h)
-├── GUI Application.ico            # Main application icon (32-bit, multi-resolution)
-├── GUI Application.rc             # Windows resource script (menu, dialog, strings, icons)
-├── GUI Application.vcxproj        # MSBuild project file (Visual Studio 2022 / v143 toolset)
-├── GUI Application.vcxproj.filters# Solution Explorer virtual-folder groupings for VS
-├── GUI Application.vcxproj.user   # Per-user IDE settings (debugger, etc.) — machine-specific
-├── framework.h                    # Precompiled-style umbrella header (windows.h, CRT headers)
-├── Resource.h                     # Numeric IDs for every resource (menu items, dialog, icons…)
-├── targetver.h                    # Defines the minimum supported Windows platform via SDKDDKVer.h
-├── small.ico                      # Small (taskbar/title-bar) variant of the application icon
-├── RCa25372                       # Stray temporary file left behind by the RC compiler (see below)
-└── README.md                      # This file
+main()
+ ├─ create 1500x900 SFML window "Tic Tac Toe", centered on the primary monitor
+ ├─ load font  psfont.otf   → used for the menu text
+ ├─ load image bg.jpeg      → used as the menu background sprite
+ └─ loop while window is open:
+     ├─ draw background + menu text ("Welcome to Gameboy", option list)
+     ├─ poll for Num1 → call Tic_Tac_Toe()      (stays inside the same SFML window)
+     ├─ poll for Num2 → close SFML window, call Flappy_bird()  (switches to console rendering)
+     └─ poll for Num3 → close SFML window, call Tetris()       (switches to console rendering)
 ```
 
-## Architecture
+### Main Menu
 
-The application follows the exact structure generated by the Visual Studio **"Windows Desktop Application"** project wizard for a native Win32 GUI app. All logic lives in a single translation unit, [`GUI Application.cpp`](GUI%20Application.cpp).
+Rendered with SFML (`sf::Text` over an `sf::Sprite` background), listing:
 
-### Application Entry Point
-
-```cpp
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                       _In_opt_ HINSTANCE hPrevInstance,
-                       _In_ LPWSTR lpCmdLine,
-                       _In_ int nCmdShow)
+```
+Welcome to Gameboy
+Select Your Option
+1. Tic Tac Toe.
+2. Flappy Bird.
+3. Tetris.
 ```
 
-`wWinMain` is the Unicode entry point used instead of `main()`/`WinMain()` for GUI subsystem apps built with wide-character strings. It:
+Selection is done by **polling `sf::Keyboard::isKeyPressed`** for the number keys `1`/`2`/`3` inside the render loop (not an event-driven `KeyPressed` handler), so a game launches as soon as the corresponding key is held down/pressed while the menu is showing.
 
-1. Loads two localizable strings from the `.rc` string table into global buffers:
-   - `szTitle` ← `IDS_APP_TITLE` ("GUI Application") — used as the window's title bar text.
-   - `szWindowClass` ← `IDC_GUIAPPLICATION` ("GUIAPPLICATION") — used as the registered window class name.
-2. Registers the window class via `MyRegisterClass`.
-3. Creates and shows the main window via `InitInstance`.
-4. Loads the accelerator table (`IDC_GUIAPPLICATION` `ACCELERATORS` resource).
-5. Runs the classic Win32 **message loop**, translating accelerator keystrokes before dispatching ordinary messages.
-6. Returns the `wParam` of the `WM_QUIT` message as the process exit code.
+### Game 1: Tic-Tac-Toe (SFML)
 
-### Window Registration
+Implemented in `Tic_Tac_Toe(sf::RenderWindow&, sf::Text&, sf::Texture&, sf::Sprite&, sf::Font&)`.
 
-`MyRegisterClass(HINSTANCE hInstance)` fills out a `WNDCLASSEXW` structure and registers it with `RegisterClassExW`:
+- **Board**: a 3×3 grid represented by `char Arr[10]` (1-indexed, `Arr[0]` unused), each cell holding `' '` (empty), `'w'` (player/human), or `'p'` (computer).
+- **Rendering**: the background is swapped to `R.jpeg`; the grid lines are drawn with `sf::RectangleShape` (`L1`/`L2` for the two straight grid dividers), and glyphs are drawn as large (`characterSize = 200`) SFML text — `"X"` in blue for the human, `"O"` in green for the computer — positioned into one of 9 cells via a `displayCharacter[18]` boolean array (indices `0–8` = human marks, `9–17` = computer marks).
+- **Turn logic**: a `counter` variable starting at `3` alternates parity each move:
+  - **Even counter** → human's turn: pressing number keys `1`–`9` places an `'X'` in the corresponding cell (if empty), and increments `counter`.
+  - **Odd counter** → computer's turn: a random number `1–9` (`rand() % 9 + 1`, reseeded with `srand(time(NULL))` every frame) is used as the cell to place an `'O'` in, retried each frame until a free cell is hit.
+- **Win detection**: `win_checker()` checks all 3 rows, 3 columns, and both diagonals for three matching non-empty marks, and draws a colored strike-through line (`sf::RectangleShape`, reused/rotated 45°/135° for the diagonals) across the winning combination.
+- **Window title text** is redrawn each frame as `"Welcome to Tic Tac Toe"`.
 
-- `lpfnWndProc` → `WndProc` (see below).
-- `hIcon` / `hIconSm` → loaded from `IDI_GUIAPPLICATION` / `IDI_SMALL` icon resources.
-- `hCursor` → the system arrow cursor (`IDC_ARROW`).
-- `hbrBackground` → the standard window background brush (`COLOR_WINDOW+1`).
-- `lpszMenuName` → `IDC_GUIAPPLICATION`, binding the `MENU` resource to every window of this class.
-- `style` → `CS_HREDRAW | CS_VREDRAW`, so the window is fully redrawn whenever it's resized horizontally or vertically.
+> Because `counter` starts at an **odd** value (3), the very first move each game actually belongs to the computer's branch (`counter % 2 != 0`), not the human — see [Known Issues](#known-issues--bugs--housekeeping).
 
-### Instance Initialization
+### Game 2: Flappy Bird (Console Buffer)
 
-`InitInstance(HINSTANCE hInstance, int nCmdShow)`:
+Implemented in `Flappy_bird()` and its helpers (`play`, `instructions`, `drawBorder`, `genPipe`, `updateScore`, `drawBird`, `drawPipe`, `collision`, `gameover`, `eraseBird`, `erasePipe`, `setcursor`, `gotoxy`). Runs entirely in the **console window** using `cout`/`gotoxy`/`SetConsoleCursorPosition` — no SFML involved.
 
-- Stores `hInstance` in the module-global `hInst`, so other functions (e.g. `About`, `MyRegisterClass`) can access it without passing it around.
-- Creates the main top-level window with `CreateWindowW`, using `WS_OVERLAPPEDWINDOW` style (title bar, system menu, minimize/maximize/close buttons, resizable border) and default size/position (`CW_USEDEFAULT`).
-- Calls `ShowWindow` and `UpdateWindow` to display and paint the window immediately.
-- Returns `FALSE` (aborting startup) if window creation fails.
+- **Screen model**: a fixed-size text "canvas" (`SCREEN_WIDTH=90`, `SCREEN_HEIGHT=26`, playfield up to `WIN_WIDTH=70`), drawn with a bordered box via `drawBorder()`.
+- **Bird**: a 2-row, 6-column ASCII sprite (`char bird[2][6]`) drawn/erased at `birdPos` each tick using `drawBird()`/`eraseBird()` (erase-then-move-then-redraw animation, i.e. manual double-buffering by character overwrite).
+- **Controls**: polled via `_kbhit()`/`_getch()` — **Spacebar** makes the bird "jump" (`birdPos -= 4`, clamped so it can't go above row 3); the bird otherwise falls by `+1` every loop iteration (simple constant-gravity model). **Esc** returns to the menu.
+- **Pipes**: two pipe slots (`pipePos[]`, `gapPos[]`, `pipeFlag[]`) drawn as columns of `"E M E"` text with a randomized vertical gap (`genPipe()` picks `gapPos = 3 + rand() % 14`, gap height `GAP_SIZE = 7`). A second pipe is spawned once the first crosses `x ≈ 40`, and pipes recycle/scroll via `pipePos[i] += 2` each tick.
+- **Collision & scoring**: `collision()` checks whether the bird's row is inside the gap once the first pipe reaches `pipePos[0] >= 61`; passing a pipe (`pipePos[0] > 68`) increments `score` (shown via `updateScore()`).
+- **Game over**: hitting a pipe or falling past the bottom border (`birdPos > SCREEN_HEIGHT - 2`) shows a "Game Over" banner and returns to the text menu.
+- **Frame pacing**: fixed `Sleep(100)` per tick (~10 FPS).
 
-### Message Loop
+### Game 3: Tetris (Console Buffer)
 
-```cpp
-while (GetMessage(&msg, nullptr, 0, 0))
-{
-    if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-    {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-}
-```
+Implemented in `Tetris()` plus `rotate()` and `Doesfit()`, using a **dedicated console screen buffer** (`CreateConsoleScreenBuffer` / `SetConsoleActiveScreenBuffer` / `WriteConsoleOutputCharacter`) rather than `cout`, for flicker-free full-screen redraws.
 
-Standard blocking Win32 message pump. `GetMessage` blocks until a message arrives (or `WM_QUIT` is posted, at which point it returns `0` and the loop exits). `TranslateAccelerator` intercepts keystrokes that match the loaded accelerator table (currently only `Alt+?` / `Alt+/` → About) before they're translated/dispatched as ordinary keyboard messages.
+- **Piece definitions**: the 7 standard tetrominoes are each encoded as a 16-character wide string (`wstring gameblock[7]`), representing a 4×4 grid where `'X'` marks a filled cell and `'.'` an empty one.
+- **Rotation algorithm**: `rotate(int px, int py, int r)` maps a piece-local `(px, py)` coordinate through one of 4 fixed index-remapping formulas (selected by `r % 4`) to get the rotated index into the 4×4 block string — a classic "rotate by index formula" trick that avoids matrix multiplication while still producing 0°/90°/180°/270° rotations.
+- **Playfield**: a heap-allocated `unsigned char* pspace` grid (`spacewidth=12 × spaceheight=18`), where `0` = empty, `9` = wall/border (pre-filled on the left/right/bottom edges), and `1–7` = a locked piece's color/id.
+- **Collision checking**: `Doesfit(piece, rotation, posx, posy)` walks the piece's 4×4 cells, rotates each via `rotate()`, and checks in-bounds + `pspace` occupancy before allowing a move/rotation.
+- **Input**: polled every tick via `GetAsyncKeyState` for **Right Arrow, Left Arrow, Down Arrow, and `Z`** (move right/left, soft-drop, rotate), with a `brotatehold` flag to prevent a single key-press from spinning the piece every frame.
+- **Gravity & locking**: a `speedcounter`/`speed=20` tick-based timer forces the active piece down periodically; when it can no longer fall, its cells are baked into `pspace`, completed rows are detected and shifted down (line clear, `+25` score per cleared column cell), and a new random piece (`rand() % 7`) spawns at the top — game over if the new piece immediately collides.
+- **Rendering**: the entire play-field plus a live `"SCORE: %8d"` HUD is composed into a `wchar_t* screen` buffer each frame and blitted in one call via `WriteConsoleOutputCharacter`.
+- **Frame pacing**: `this_thread::sleep_for(50ms)` per tick (~20 FPS).
 
-### Window Procedure
+### Assets Used by `Project.cpp`
 
-`WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)` handles three messages:
-
-| Message | Behavior |
-|---|---|
-| `WM_COMMAND` | Dispatches on the low word of `wParam` (the control/menu ID). Handles `IDM_ABOUT` (opens the About dialog via `DialogBox`) and `IDM_EXIT` (calls `DestroyWindow`). Anything else falls through to `DefWindowProc`. |
-| `WM_PAINT` | Calls `BeginPaint`/`EndPaint` with no drawing in between — currently a no-op placeholder (`// TODO: Add any drawing code that uses hdc here...`). This is where all game/launcher rendering would eventually go, or be replaced by a rendering backend (e.g. SFML's own window/render loop, GDI, or console buffer writes). |
-| `WM_DESTROY` | Calls `PostQuitMessage(0)`, which posts `WM_QUIT` and causes the message loop in `wWinMain` to terminate. |
-| *(default)* | Forwarded to `DefWindowProc` for standard OS-provided behavior. |
-
-### About Dialog
-
-`About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)` is a modal dialog procedure registered for the `IDD_ABOUTBOX` dialog resource:
-
-- On `WM_INITDIALOG`, does nothing beyond returning `TRUE` (accepting default focus).
-- On `WM_COMMAND` with `IDOK` or `IDCANCEL` (i.e., the OK button or Esc/close), calls `EndDialog` to close the modal dialog and return control to `WndProc`.
-
-## Resources
-
-All UI resources are declared in [`GUI Application.rc`](GUI%20Application.rc) and given symbolic names in [`Resource.h`](Resource.h).
-
-### Resource Symbols (Resource.h)
-
-| Symbol | Value | Purpose |
+| File | Used by | Purpose |
 |---|---|---|
-| `IDS_APP_TITLE` | 103 | String: main window title ("GUI Application") |
-| `IDR_MAINFRAME` | 128 | Icon reference used inside the About dialog |
-| `IDD_GUIAPPLICATION_DIALOG` | 102 | Reserved dialog ID (unused by current resources) |
-| `IDD_ABOUTBOX` | 103 | The About dialog template |
-| `IDM_ABOUT` | 104 | Menu/accelerator command: show About box |
-| `IDM_EXIT` | 105 | Menu command: exit the application |
-| `IDI_GUIAPPLICATION` | 107 | Main (large) application icon |
-| `IDI_SMALL` | 108 | Small application icon (title bar / taskbar) |
-| `IDC_GUIAPPLICATION` | 109 | Shared ID for the window class name string, the menu, and the accelerator table |
-| `IDC_MYICON` | 2 | Legacy/unused icon control ID |
-| `IDC_STATIC` | -1 | Standard "no specific ID" marker for static dialog controls |
+| [`psfont.otf`](psfont.otf) | Main menu, Tic-Tac-Toe UI text | SFML font for all in-window text |
+| [`ARIAL.TTF`](ARIAL.TTF) | Tic-Tac-Toe | Loaded (as `"ARIAL.ttf"`) and used as the font for the large `X`/`O` glyphs, **overwriting** the `ARIAL` font object that initially held `psfont.otf` |
+| [`bg.jpeg`](bg.jpeg) | Main menu | Menu screen background image |
+| [`R.jpeg`](R.jpeg) | Tic-Tac-Toe | Background image swapped in once Tic-Tac-Toe starts |
 
-### Menu
+All four files must be present in the executable's **working directory** at runtime — SFML's `loadFromFile` calls use bare relative filenames with no path resolution or error checking.
 
-Bound to every window of class `IDC_GUIAPPLICATION`:
+### Dependencies
 
+- **[SFML](https://www.sfml-dev.org/)** — specifically the `Graphics` (and transitively `Window`/`System`) modules: `sf::RenderWindow`, `sf::Texture`, `sf::Sprite`, `sf::Font`, `sf::Text`, `sf::Keyboard`, `sf::Event`.
+- **Windows SDK** — `<Windows.h>` for console buffer APIs, `GetAsyncKeyState`, `Sleep`.
+- **C runtime** — `<conio.h>` (`_getch`, `_getche`, `_kbhit`), `<time.h>` (`rand`/`srand` seeding), `<thread>` (`this_thread::sleep_for`).
+
+No SFML NuGet package, vcpkg manifest, or linker configuration for SFML currently exists anywhere in this repository — `Project.cpp` assumes SFML's headers/libs (and its runtime DLLs, e.g. `sfml-graphics-2.dll`, `sfml-window-2.dll`, `sfml-system-2.dll`) are made available by whatever project/toolchain compiles it.
+
+### Building and Running `Project.cpp`
+
+`Project.cpp` is **not** included in `GUI Application.vcxproj`, so it must be compiled separately. Two common approaches:
+
+**Option A — new Visual Studio project + vcpkg**
+
+```powershell
+vcpkg install sfml:x64-windows
 ```
-File
-  Exit                     → IDM_EXIT
-Help
-  About ...                → IDM_ABOUT
+
+1. Create a new empty **C++ Console/Windows Application** project in Visual Studio.
+2. Add `Project.cpp` as the only source file.
+3. Link the vcpkg-provided SFML (`sfml-graphics`, `sfml-window`, `sfml-system`) — vcpkg's MSBuild integration (`vcpkg integrate install`) wires include/lib paths automatically.
+4. Copy `ARIAL.TTF`, `psfont.otf`, `bg.jpeg`, `R.jpeg` into the build output directory (next to the produced `.exe`) so `loadFromFile` can find them.
+5. Build and run.
+
+**Option B — MinGW / g++ command line**
+
+```bash
+g++ Project.cpp -o launcher.exe -I<SFML_include_dir> -L<SFML_lib_dir> ^
+    -lsfml-graphics -lsfml-window -lsfml-system -lgdi32
 ```
 
-### Accelerator Table
+Then copy the SFML runtime DLLs and the four asset files above alongside `launcher.exe` before running it.
 
-| Key | Command |
-|---|---|
-| `Alt+?` | `IDM_ABOUT` |
-| `Alt+/` | `IDM_ABOUT` |
+## The Win32 Skeleton (`GUI Application.*`)
 
-### Dialog: About Box
+This half of the repository is the **unmodified Visual Studio "Windows Desktop Application" wizard template** — scaffolding for a native Win32 GUI app that contains no game logic and is entirely disconnected from `Project.cpp`. It is documented here for completeness since it is checked into the repo and has its own build configuration.
 
-`IDD_ABOUTBOX` — a fixed-size (170×62 DLU), modal, system-menu dialog containing:
+### Architecture
 
-- The application icon (`IDR_MAINFRAME`).
-- Static text: "GUI Application, Version 1.0"
-- Static text: "Copyright (c) 2023"
-- An **OK** default push-button (`IDOK`).
+All logic lives in [`GUI Application.cpp`](GUI%20Application.cpp):
 
-### String Table
+- **`wWinMain`** — Unicode entry point. Loads `szTitle`/`szWindowClass` strings from the resource string table, registers the window class, creates/shows the window, loads the accelerator table, and runs the standard blocking Win32 message loop (`GetMessage` → `TranslateAccelerator`/`TranslateMessage` → `DispatchMessage`).
+- **`MyRegisterClass`** — fills and registers a `WNDCLASSEXW` (icon, cursor, background brush, menu, window-proc pointer).
+- **`InitInstance`** — stores `hInst`, creates the top-level window (`WS_OVERLAPPEDWINDOW`, default size/position), shows/updates it.
+- **`WndProc`** — handles `WM_COMMAND` (`IDM_ABOUT` opens the About dialog, `IDM_EXIT` destroys the window), `WM_PAINT` (empty `BeginPaint`/`EndPaint` stub — no drawing), and `WM_DESTROY` (`PostQuitMessage`).
+- **`About`** — modal dialog procedure for the About box; closes on `IDOK`/`IDCANCEL`.
 
-| ID | Value |
-|---|---|
-| `IDC_GUIAPPLICATION` | `"GUIAPPLICATION"` (window class name) |
-| `IDS_APP_TITLE` | `"GUI Application"` (window title) |
+### Resources
 
-### Icons
+Declared in [`GUI Application.rc`](GUI%20Application.rc), IDs defined in [`Resource.h`](Resource.h):
 
-- [`GUI Application.ico`](GUI%20Application.ico) — main icon, referenced as `IDI_GUIAPPLICATION`.
-- [`small.ico`](small.ico) — small icon variant, referenced as `IDI_SMALL`.
+- **Menu** (`IDC_GUIAPPLICATION`): `File → Exit` (`IDM_EXIT`), `Help → About...` (`IDM_ABOUT`).
+- **Accelerators**: `Alt+?` and `Alt+/` both map to `IDM_ABOUT`.
+- **Dialog** `IDD_ABOUTBOX`: fixed 170×62 DLU modal box showing app name/version, "Copyright (c) 2023", and an OK button.
+- **String table**: `IDC_GUIAPPLICATION` = `"GUIAPPLICATION"` (window class name), `IDS_APP_TITLE` = `"GUI Application"` (window title).
+- **Icons**: [`GUI Application.ico`](GUI%20Application.ico) (main) and [`small.ico`](small.ico) (taskbar/title-bar).
 
-Both are declared in the `.rc` file with the icon of lowest resource ID listed first, which is what Windows uses to determine the icon shown for the executable in File Explorer.
+### Build System
 
-## Build System
+[`GUI Application.vcxproj`](GUI%20Application.vcxproj) — MSBuild project, `PlatformToolset=v143` (VS2022), `CharacterSet=Unicode`, four configurations (`Debug`/`Release` × `Win32`/`x64`), all building a `Windows`-subsystem `.exe` with Level 3 warnings, SDL checks, and conformance mode enabled; Release adds function-level linking, intrinsics, whole-program optimization, COMDAT folding, and reference optimization. No SFML or other third-party references exist in this project file.
 
-### Project File (.vcxproj)
-
-[`GUI Application.vcxproj`](GUI%20Application.vcxproj) is an MSBuild project (`VCProjectVersion` 16.0, i.e. Visual Studio 2019/2022-compatible format) with:
-
-- `RootNamespace`: `GUIApplication`
-- `Keyword`: `Win32Proj` (native, non-MFC/ATL desktop app)
-- `WindowsTargetPlatformVersion`: `10.0` (latest installed Windows 10/11 SDK)
-- `PlatformToolset`: `v143` (Visual Studio 2022's MSVC toolset)
-
-### Build Configurations
-
-Four configuration/platform combinations are defined:
-
-| Configuration | Platform |
-|---|---|
-| Debug | Win32 (x86) |
-| Release | Win32 (x86) |
-| Debug | x64 |
-| Release | x64 |
-
-All four produce an `Application` (`ConfigurationType = Application`, i.e. a `.exe`), use the **Unicode** character set, and target the **Windows** GUI subsystem (`SubSystem = Windows`, meaning the exe has no console window by default).
-
-### Compiler / Linker Settings
-
-- **Warning level**: Level 3 in all configurations.
-- **SDL checks**: enabled (`SDLCheck = true`) — Microsoft's basic Security Development Lifecycle static checks.
-- **Conformance mode**: enabled (`ConformanceMode = true`) — stricter standards-conformant parsing.
-- **Preprocessor definitions**:
-  - Debug: `WIN32` (Win32 only); `_DEBUG`; `_WINDOWS`
-  - Release: `WIN32` (Win32 only); `NDEBUG`; `_WINDOWS`
-- **Release-only optimizations**: `FunctionLevelLinking`, `IntrinsicFunctions`, `WholeProgramOptimization`, `EnableCOMDATFolding`, `OptimizeReferences`.
-- **Debug info**: generated in every configuration (`GenerateDebugInformation = true`), including Release, for easier post-mortem debugging.
-
-Item groups declare the following build inputs:
-
-- `ClInclude`: `framework.h`, `GUI Application.h`, `Resource.h`, `targetver.h`
-- `ClCompile`: `GUI Application.cpp`
-- `ResourceCompile`: `GUI Application.rc`
-- `Image`: `GUI Application.ico`, `small.ico`
-
-## Prerequisites
-
-- **Windows 10/11**
-- **Visual Studio 2022** (Community, Professional, or Enterprise) with the **"Desktop development with C++"** workload installed, which provides:
-  - The MSVC v143 x86/x64 build tools
-  - A Windows 10/11 SDK
-  - MSBuild
-- No third-party libraries (e.g. SFML) are currently required to build, since none are referenced by the project.
-
-## Building the Project
-
-### Using Visual Studio IDE
-
-1. Open `GUI Application.vcxproj` directly in Visual Studio 2022 (or generate/open a `.sln` that references it).
-2. Select a configuration/platform from the toolbar, e.g. **Debug | x64** or **Release | x64**.
-3. Build via **Build → Build Solution** (`Ctrl+Shift+B`).
-4. Run via **Debug → Start Debugging** (`F5`) or **Start Without Debugging** (`Ctrl+F5`).
-
-### Using MSBuild from the Command Line
-
-From a **Developer Command Prompt for VS 2022** (or `Developer PowerShell`):
+### Building the Win32 Skeleton
 
 ```powershell
 msbuild "GUI Application.vcxproj" /p:Configuration=Release /p:Platform=x64
 ```
 
-Valid `Configuration` values: `Debug`, `Release`.
-Valid `Platform` values: `Win32`, `x64`.
+Or open `GUI Application.vcxproj` directly in Visual Studio 2022 and build/run with `Ctrl+Shift+B` / `F5`. Running it just shows an empty window with a `File`/`Help` menu and an About dialog — no games, no content.
 
-The resulting executable is placed under a generated `x64\Release\` (or equivalent) output folder alongside the project.
+## Repository Structure
 
-## Running the Application
-
-Launch the built `GUI Application.exe`. You'll see:
-
-- An empty window titled **"GUI Application"**.
-- A **File** menu with **Exit**.
-- A **Help** menu with **About ...**, which opens a small modal dialog showing the app name, version, and copyright, dismissible via **OK**.
-
-There is currently no in-window content, game selection UI, or playable game — see the [Roadmap](#roadmap-reaching-the-intended-multi-game-launcher-scope) below.
+```
+-Gameboy-Multi-Game-Launcher/
+├── Project.cpp                     # ⭐ The actual game suite: menu + Tic-Tac-Toe (SFML) + Flappy Bird & Tetris (console buffer)
+├── ARIAL.TTF                       # Font asset — large X/O glyphs in Tic-Tac-Toe
+├── psfont.otf                      # Font asset — menu / UI text
+├── bg.jpeg                         # Image asset — main menu background
+├── R.jpeg                          # Image asset — Tic-Tac-Toe background
+│
+├── GUI Application.cpp             # Unrelated Win32 wizard skeleton: WinMain, WndProc, message loop
+├── GUI Application.h               # Minimal app header (pulls in Resource.h)
+├── GUI Application.ico             # Main application icon (32-bit, multi-resolution)
+├── GUI Application.rc              # Windows resource script (menu, dialog, strings, icons)
+├── GUI Application.vcxproj         # MSBuild project file for the Win32 skeleton only
+├── GUI Application.vcxproj.filters # Solution Explorer virtual-folder groupings for VS
+├── GUI Application.vcxproj.user    # Per-user IDE settings (debugger, etc.) — machine-specific
+├── framework.h                     # Precompiled-style umbrella header (windows.h, CRT headers)
+├── Resource.h                      # Numeric IDs for every Win32-skeleton resource
+├── targetver.h                     # Minimum supported Windows platform (SDKDDKVer.h)
+├── small.ico                       # Small (taskbar/title-bar) icon variant
+├── RCa25372                        # Stray temporary file left behind by the RC compiler (see Known Issues)
+└── README.md                       # This file
+```
 
 ## File-by-File Reference
 
 | File | Description |
 |---|---|
-| [`GUI Application.cpp`](GUI%20Application.cpp) | All application logic: `wWinMain`, `MyRegisterClass`, `InitInstance`, `WndProc`, `About`. |
-| [`GUI Application.h`](GUI%20Application.h) | Tiny header that just `#include`s `resource.h`; included by `GUI Application.cpp`. |
-| [`framework.h`](framework.h) | Precompiled/umbrella header: pulls in `targetver.h`, defines `WIN32_LEAN_AND_MEAN`, includes `<windows.h>` and core CRT headers (`stdlib.h`, `malloc.h`, `memory.h`, `tchar.h`). |
-| [`targetver.h`](targetver.h) | Includes `<SDKDDKVer.h>` to target the highest Windows platform available, per Microsoft's standard template. |
-| [`Resource.h`](Resource.h) | Auto-generated numeric IDs for every resource symbol used by both the `.cpp` and `.rc` files. Marked `//{{NO_DEPENDENCIES}}`, meaning it's normally regenerated by the Visual Studio Resource Editor rather than hand-edited. |
-| [`GUI Application.rc`](GUI%20Application.rc) | Windows resource script defining the icons, menu, accelerator table, About dialog, and string table (see [Resources](#resources)). |
-| [`GUI Application.ico`](GUI%20Application.ico) / [`small.ico`](small.ico) | Multi-resolution icon files used for the app/taskbar icon. |
-| [`GUI Application.vcxproj`](GUI%20Application.vcxproj) | MSBuild project file — build configurations, compiler/linker settings, source file list (see [Build System](#build-system)). |
-| [`GUI Application.vcxproj.filters`](GUI%20Application.vcxproj.filters) | Purely cosmetic: groups files into Solution Explorer virtual folders ("Header Files", "Source Files", "Resource Files"). Doesn't affect the actual build. |
-| [`GUI Application.vcxproj.user`](GUI%20Application.vcxproj.user) | Per-developer, machine-local IDE settings (e.g. debugger working directory). Not meaningful to other checkouts and typically excluded from version control. |
-| `RCa25372` | Stray leftover **temporary file from the RC (resource) compiler** — see [Known Issues](#known-issues--housekeeping). |
+| [`Project.cpp`](Project.cpp) | The real multi-game launcher: `main()`, menu, `Tic_Tac_Toe`, `win_checker`, the full Flappy Bird module, and the full Tetris module (see [above](#the-game-suite-projectcpp)). |
+| [`ARIAL.TTF`](ARIAL.TTF) | TrueType font asset used for the Tic-Tac-Toe `X`/`O` glyphs. |
+| [`psfont.otf`](psfont.otf) | OpenType font asset used for menu/UI text. |
+| [`bg.jpeg`](bg.jpeg) | Menu screen background image. |
+| [`R.jpeg`](R.jpeg) | Tic-Tac-Toe screen background image. |
+| [`GUI Application.cpp`](GUI%20Application.cpp) | Win32 wizard skeleton logic: `wWinMain`, `MyRegisterClass`, `InitInstance`, `WndProc`, `About`. Unrelated to the games. |
+| [`GUI Application.h`](GUI%20Application.h) | Tiny header that just `#include`s `resource.h`. |
+| [`framework.h`](framework.h) | Umbrella header: `targetver.h`, `WIN32_LEAN_AND_MEAN`, `<windows.h>`, core CRT headers. |
+| [`targetver.h`](targetver.h) | Includes `<SDKDDKVer.h>` to target the highest available Windows platform. |
+| [`Resource.h`](Resource.h) | Auto-generated numeric resource IDs for the Win32 skeleton (menu items, dialog, icons). Normally regenerated by the VS Resource Editor. |
+| [`GUI Application.rc`](GUI%20Application.rc) | Windows resource script: icons, menu, accelerator table, About dialog, string table for the Win32 skeleton. |
+| [`GUI Application.ico`](GUI%20Application.ico) / [`small.ico`](small.ico) | Multi-resolution icon files for the Win32 skeleton's window/taskbar icon. |
+| [`GUI Application.vcxproj`](GUI%20Application.vcxproj) | MSBuild project file for the Win32 skeleton only — does **not** build `Project.cpp`. |
+| [`GUI Application.vcxproj.filters`](GUI%20Application.vcxproj.filters) | Cosmetic Solution Explorer virtual-folder groupings; doesn't affect the build. |
+| [`GUI Application.vcxproj.user`](GUI%20Application.vcxproj.user) | Per-developer, machine-local IDE settings; not meaningful across checkouts. |
+| `RCa25372` | Stray leftover temporary file from the RC (resource) compiler — see [Known Issues](#known-issues--bugs--housekeeping). |
 | [`README.md`](README.md) | This documentation file. |
 
-## Known Issues / Housekeeping
+## Known Issues / Bugs / Housekeeping
 
-- **`RCa25372` should not be committed.** It's a transient, UTF-16-encoded intermediate file the Visual Studio Resource Compiler (`rc.exe`) writes to expand `#include`s in `GUI Application.rc` before compiling it into a `.res`. Its embedded `#line` directives reveal the original author's local path (`E:\Documents\2nd semester\Programming\Final Project\GUI Application\...`), confirming it's machine-generated build output rather than source. It should be deleted from the repo and ignored going forward.
-- **No `.gitignore`.** Because there's no ignore file, build output directories (`Debug/`, `Release/`, `x64/`, `.vs/`, `*.obj`, `*.res`, `*.ilk`, `*.pdb`, etc.) and the machine-specific `.vcxproj.user` file are all at risk of being committed accidentally in future changes.
-- **`WM_PAINT` is an empty stub.** No drawing occurs; the window currently just shows the default window background.
-- **`IDD_GUIAPPLICATION_DIALOG` (102) is declared but unused** — no dialog template with that ID exists in the `.rc` file. Harmless, but a leftover from the wizard template.
-- **Copyright year is stale** ("Copyright (c) 2023") relative to the current date.
+- **`Project.cpp` is not part of any build configuration.** There is no `.vcxproj`/CMake/Makefile target that compiles it, and no SFML linkage is set up anywhere in the repo. It must be built manually per [Building and Running `Project.cpp`](#building-and-running-projectcpp).
+- **No asset path resolution or error checking.** `loadFromFile("psfont.otf")`, `loadFromFile("bg.jpeg")`, `loadFromFile("R.jpeg")`, and `loadFromFile("ARIAL.ttf")` all use bare relative filenames with unchecked return values — if the working directory doesn't contain these files (or the filesystem is case-sensitive and doesn't match `ARIAL.TTF` vs. `"ARIAL.ttf"`), SFML fails silently and text/backgrounds simply don't render.
+- **Tic-Tac-Toe turn order starts on the computer.** `counter` is initialized to `3` (odd), and the "computer's turn" branch runs when `counter % 2 != 0` — so the computer moves first, despite the UI implying the player goes first.
+- **Tic-Tac-Toe has no win/draw end-state.** `win_checker` draws a strike-through line but never stops the game, disables further input, shows a "you win" message, or detects a draw (full board, no winner) — play continues indefinitely after a win.
+- **Flappy Bird / Tetris leak console-mode side effects.** Both games call `system("cls")` and manipulate the console cursor/screen buffer directly; since the produced executable's subsystem depends entirely on how `Project.cpp` is compiled (Console vs. Windows), console output may not be visible unless built as a **Console** subsystem application.
+- **`RCa25372` should not be committed.** It's a transient, UTF-16-encoded intermediate file the Visual Studio Resource Compiler (`rc.exe`) writes to expand `#include`s in `GUI Application.rc` before compiling it into a `.res`. It's machine-generated build output, not source, and should be deleted and ignored going forward.
+- **No `.gitignore`.** Build output directories (`Debug/`, `Release/`, `x64/`, `.vs/`, `*.obj`, `*.res`, `*.ilk`, `*.pdb`, vcpkg build artifacts, etc.) and the machine-specific `.vcxproj.user` file are all at risk of being committed accidentally.
+- **The Win32 skeleton and the game suite are entirely disconnected.** Two separate `main`/`wWinMain` entry points exist in the same repository with no shared build target — only one of them (whichever is compiled) can actually run at a time.
+- **`WM_PAINT` in the Win32 skeleton is an empty stub** — no drawing occurs there.
+- **Copyright year in the About dialog is stale** ("Copyright (c) 2023").
 
-## Roadmap: Reaching the Intended "Multi-Game Launcher" Scope
+## Roadmap
 
-Based on the original project description, the following would need to be implemented on top of this skeleton:
+To turn this into a single, cohesive, buildable project:
 
-1. **Add SFML** to the project (via vcpkg or manual SDK linking: include/lib paths, `sfml-graphics`, `sfml-window`, `sfml-system` link libraries, and the required runtime DLLs alongside the executable).
-2. **Build a launcher screen** — either an SFML render window or additional Win32 controls — that lets the user pick between the available games (e.g. Tetris, Flappy Bird).
-3. **Console buffer text renderer** — a module wrapping the Windows Console API (`GetStdHandle(STD_OUTPUT_HANDLE)`, `SetConsoleCursorPosition`, `WriteConsoleOutputW`/`WriteConsoleOutputCharacterW`) for fast, flicker-free text-mode rendering, likely used by one or both games instead of/alongside SFML.
-4. **Tetris module**: board grid data structure, tetromino shapes, and matrix-rotation logic (e.g. rotating a piece's cell coordinates via a rotation matrix or precomputed rotation states), line-clear detection, scoring, gravity/drop timing, and input handling.
-5. **Flappy Bird module**: a custom physics loop (gravity acceleration applied to the bird's vertical velocity/position each tick), scrolling pipe obstacles, collision detection, and cursor/keyboard-driven "flap" input.
-6. **Game loop integration** with the existing Win32 message pump — likely replacing the blocking `GetMessage` loop with a `PeekMessage`-based loop (or a separate SFML event loop) so games can render continuously rather than only in response to window messages.
-7. **Packaging**: ensure SFML runtime DLLs and any game asset files (sprites, fonts) ship alongside the built executable.
-8. **`.gitignore`** covering VS/MSBuild build artifacts, and removal of the stray `RCa25372` file.
+1. **Add a build configuration for `Project.cpp`** — either a new `.vcxproj`/`.sln` with SFML wired in via vcpkg/NuGet, or a `CMakeLists.txt`, so the game suite can be built without manual command-line steps.
+2. **Retire or merge the Win32 skeleton** — either delete the unused `GUI Application.*` wizard scaffold, or actually route its `WndProc`/`WM_PAINT` into the game suite as an alternative rendering backend.
+3. **Fix asset loading** — check `loadFromFile` return values, resolve asset paths relative to the executable (not the working directory), and fix the `ARIAL.TTF`/`ARIAL.ttf` casing mismatch.
+4. **Fix Tic-Tac-Toe game-over handling** — stop the game, lock the board, and display a win/draw message once `win_checker` finds a winner or the board fills up. Also fix the turn-order-starts-on-computer bug.
+5. **Add a `.gitignore`** covering VS/MSBuild/vcpkg build artifacts, and remove the stray `RCa25372` file from version control.
+6. **Return-to-menu flow** — currently selecting Flappy Bird or Tetris permanently closes the SFML window (`window.close()`); there's no path back to the graphical main menu after finishing either console game.
 
 ## License
 
