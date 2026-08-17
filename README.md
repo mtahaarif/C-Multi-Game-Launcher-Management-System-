@@ -4,14 +4,6 @@ A C++ multi-game launcher. It bundles four components behind a single graphical 
 
 **Stated objective:** *"To write simplest programs in C++."* **Stated introduction (verbatim intent):** the team set out to design code for a device that can handle multiple programs/games — similar in spirit to the late-90s Game Boy — as a single integrated platform so users don't need to switch between devices for different games/utilities, with an eye toward save/load progress and customizable settings. The team's primary technical focus was Flappy Bird, Tic-Tac-Toe, and Tetris, with a management-system module added "to provide the user with extra features."
 
-**Per-module authorship (as credited in the Project Report):**
-
-| Module | Author | Notes from the report |
-|---|---|---|
-| SFML setup, main menu integration, Tic-Tac-Toe | Muhammad Taha | "GUI was generated using SFML libraries and texture to [create] Tic-Tac-Toe and menu background wallpaper." |
-| Flappy Bird | Talha Arshad | Built with `<Windows.h>` console APIs; described in the report as "quite complex and efficient." |
-| Tetris | Mueed Rauf | Described as making "frequent use of Arrays," also built with `<Windows.h>` console APIs. |
-| Shop Management System | Muhammad Abdullah | Built using object-oriented programming and inheritance. |
 
 > **Repository composition note:** This repository actually contains **two independent, unconnected pieces of code**, plus a discrepancy between the checked-in source and the Project Report's version of it:
 >
